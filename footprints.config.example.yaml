@@ -1,0 +1,7 @@
+# Minimal building-footprint detection config example.
+orthophoto: "data/ortho.tif"
+out_footprints: "out/building_footprints.shp"
+backend: mask_rcnn
+confidence_threshold: 0.5
+regularize: hybrid
+report: out/footprints_report.json

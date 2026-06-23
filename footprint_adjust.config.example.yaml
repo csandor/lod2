@@ -1,0 +1,13 @@
+# Footprint area-filtering and height-estimation config example.
+# Input and output may be .shp, .gpkg, or .geojson (format from extension).
+footprints: "out/building_footprints.shp"
+# input_layer: buildings   # which layer to read from a multi-layer GPKG (default: first)
+dsm_dtm_diff: "data/dsm_dtm_diff.tif"
+out_footprints: "out/footprints_adjusted.shp"
+# output_layer: footprints # layer name to write in a .gpkg output (default: file stem)
+min_area: 30.0        # drop footprints smaller than this 2D area (m²)
+buffer: 1.0           # inward buffer (m) before sampling the height raster
+min_height: 2.0       # drop footprints with estimated height below this (m)
+height_column: height # output column for the median DSM-DTM height
+                      # (.shp limits column names to 10 chars; .gpkg/.geojson don't)
+report: out/footprint_adjust_report.json

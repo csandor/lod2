@@ -1,0 +1,60 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+*.so
+
+# --- uv / virtualenv ---
+.venv/
+venv/
+env/
+# uv.lock IS committed (reproducible installs) — do not ignore it.
+
+# --- Tooling caches ---
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Project data & generated outputs ---
+# Large geospatial sample data (~8 GB) — keep out of the repo.
+sample data/
+# Pipeline / CLI outputs (rasters, shapefiles, GPKG, reports, debug cutouts).
+out/
+
+# --- Geospatial artifacts anywhere in the tree ---
+# Heavy rasters and vector outputs that shouldn't be versioned.
+*.tif
+*.tiff
+*.ecw
+*.vrt
+*.gpkg
+# Shapefile sidecar set (commit .shp deliberately only if ever needed).
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.qix
+*.idx
+*.geojson
+
+# --- Local configs (commit only the *.example.yaml templates) ---
+config.yaml
+footprints.config.yaml
+footprint_adjust.config.yaml
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- Local Claude settings ---
+.claude/settings.local.json
