@@ -4,15 +4,12 @@ from dataclasses import replace
 from pathlib import Path
 
 import geopandas as gpd
-import rasterio
-from rasterio.mask import mask as rasterio_mask
-from shapely.geometry import mapping
 
 from lod2_citygml.citygml_writer import write_citygml
 from lod2_citygml.cityjson_writer import write_cityjson
 from lod2_citygml.config import RunConfig
 from lod2_citygml.elevation import estimate_buildings
-from lod2_citygml.geometry import roof_from_dsm
+from lod2_citygml.geometry import parametric_roof_faces
 from lod2_citygml.io_data import load_inputs
 from lod2_citygml.reporting import summarize, write_report
 from lod2_citygml.roof import infer_roof_kind
@@ -25,39 +22,33 @@ def run_pipeline(config: RunConfig) -> None:
     try:
         validate_inputs(config, footprints, ortho, dsm, dtm)
 
-        # Optional CRS override for the vector layer.
         if config.crs:
             footprints = footprints.to_crs(config.crs)
 
-        # AOI support: path to vector or "minx,miny,maxx,maxy".
         if config.aoi:
             footprints = _clip_to_aoi(footprints, config.aoi)
 
         records = estimate_buildings(footprints, dsm, dtm)
         records = infer_roof_kind(records, dsm, config.min_roof_confidence)
 
-        # Export DSM/DTM cutouts for debugging
-        _export_building_rasters(records, dsm, dtm, config.out_citygml.parent if config.out_citygml else Path("out"))
-
-        # Add triangulated roof surface for pitched roofs from DSM data.
         records = [
             replace(
                 rec,
                 eave_z=rec.base_z + (rec.roof_z - rec.base_z) * 0.3,
-                roof_triangles=roof_from_dsm(
+                roof_faces=parametric_roof_faces(
                     rec.footprint,
-                    dsm,
-                    rec.base_z,
-                    rec.base_z + (rec.roof_z - rec.base_z) * 0.3,
-                    rec.roof_z
-                )
+                    rec.long_axis,
+                    rec.short_axis,
+                    rec.roof_kind,
+                    eave_z=rec.base_z + (rec.roof_z - rec.base_z) * 0.3,
+                    ridge_z=rec.roof_z,
+                ),
             )
             if rec.roof_kind != "flat"
             else rec
             for rec in records
         ]
 
-        # Optional LOD1 intermediate saved as GeoPackage for inspection.
         if config.lod1_intermediate:
             _write_lod1_intermediate(records, config.lod1_intermediate, footprints.crs)
 
@@ -73,45 +64,6 @@ def run_pipeline(config: RunConfig) -> None:
         ortho.close()
         dsm.close()
         dtm.close()
-
-
-def _export_building_rasters(records, dsm, dtm, output_dir: Path) -> None:
-    import numpy as np
-
-    debug_dir = output_dir / "debug_rasters"
-    debug_dir.mkdir(parents=True, exist_ok=True)
-
-    print(f"Exporting relative height (DSM - DTM) for {len(records)} buildings...")
-
-    for i, rec in enumerate(records):
-        geom_list = [mapping(rec.footprint)]
-
-        dsm_cut, dsm_transform = rasterio_mask(dsm, geom_list, crop=True)
-        dtm_cut, _ = rasterio_mask(dtm, geom_list, crop=True)
-
-        if dsm_cut.size == 0:
-            continue
-
-        building_id = str(rec.building_id).replace("/", "_")
-
-        # Compute relative height (DSM - DTM)
-        relative_height = dsm_cut[0].astype(np.float32) - dtm_cut[0].astype(np.float32)
-
-        height_path = debug_dir / f"height_b{building_id}.tif"
-        with rasterio.open(
-            height_path,
-            "w",
-            driver="GTiff",
-            height=relative_height.shape[0],
-            width=relative_height.shape[1],
-            count=1,
-            dtype=np.float32,
-            transform=dsm_transform,
-            crs=dsm.crs,
-        ) as dst:
-            dst.write(relative_height, 1)
-
-        print(f"  {i+1}. Building {rec.building_id}: height={rec.height:.2f}m (min={np.nanmin(relative_height):.2f}, max={np.nanmax(relative_height):.2f})")
 
 
 def _clip_to_aoi(footprints: gpd.GeoDataFrame, aoi: str) -> gpd.GeoDataFrame:

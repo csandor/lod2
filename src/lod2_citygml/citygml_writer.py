@@ -57,9 +57,9 @@ def write_citygml(records: list[BuildingRecord], output: Path, version: str) -> 
 
         _add_surface(comp, f"b{i}_ground", bottom)
 
-        if rec.roof_triangles:
-            for t, tri in enumerate(rec.roof_triangles):
-                _add_surface(comp, f"b{i}_roof_{t}", tri)
+        if rec.roof_faces:
+            for t, face in enumerate(rec.roof_faces):
+                _add_surface(comp, f"b{i}_roof_{t}", face)
         else:
             _add_surface(comp, f"b{i}_roof", top)
 

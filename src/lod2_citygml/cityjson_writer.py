@@ -35,9 +35,9 @@ def write_cityjson(records: list[BuildingRecord], output: Path, epsg: int | None
         shell = []
         shell.append([[v_idx(c) for c in bottom]])
 
-        if rec.roof_triangles:
-            for tri in rec.roof_triangles:
-                shell.append([[v_idx(c) for c in tri]])
+        if rec.roof_faces:
+            for face in rec.roof_faces:
+                shell.append([[v_idx(c) for c in face]])
         else:
             shell.append([[v_idx(c) for c in top]])
 

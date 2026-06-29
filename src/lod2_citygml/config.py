@@ -25,13 +25,9 @@ class RunConfig:
     max_buildings: int = 50_000
     max_area_km2: float = 25.0
     on_large_area: str = "warn"
-    quality: str = "high_precision"
-    roof_detail: str = "fine"
     min_roof_confidence: float = 0.45
     lod1_intermediate: Path | None = None
-    fallback_roof_mode: str = "simple_planes"
     tile_size: int = 2000
-    workers: int = 1
     log_level: str = "INFO"
     report: Path | None = None
 
@@ -75,13 +71,9 @@ def build_config(cli_values: dict[str, Any], file_values: dict[str, Any]) -> Run
         max_buildings=int(merged.get("max_buildings", 50_000)),
         max_area_km2=float(merged.get("max_area_km2", 25.0)),
         on_large_area=str(merged.get("on_large_area", "warn")),
-        quality=str(merged.get("quality", "high_precision")),
-        roof_detail=str(merged.get("roof_detail", "fine")),
         min_roof_confidence=float(merged.get("min_roof_confidence", 0.45)),
         lod1_intermediate=Path(merged["lod1_intermediate"]) if merged.get("lod1_intermediate") else None,
-        fallback_roof_mode=str(merged.get("fallback_roof_mode", "simple_planes")),
         tile_size=int(merged.get("tile_size", 2000)),
-        workers=int(merged.get("workers", 1)),
         log_level=str(merged.get("log_level", "INFO")),
         report=Path(merged["report"]) if merged.get("report") else None,
     )
@@ -95,18 +87,10 @@ def validate_config(config: RunConfig) -> None:
         raise ConfigError("--citygml-version must be one of: 2.0, 3.0")
     if config.on_large_area not in {"warn", "abort", "tile"}:
         raise ConfigError("--on-large-area must be one of: warn, abort, tile")
-    if config.quality != "high_precision":
-        raise ConfigError("Only --quality=high_precision is supported.")
-    if config.roof_detail != "fine":
-        raise ConfigError("Only --roof-detail=fine is supported.")
-    if config.fallback_roof_mode not in {"flat", "simple_planes"}:
-        raise ConfigError("--fallback-roof-mode must be one of: flat, simple_planes")
     if not (0.0 <= config.min_roof_confidence <= 1.0):
         raise ConfigError("--min-roof-confidence must be in [0, 1].")
     if config.tile_size <= 0:
         raise ConfigError("--tile-size must be > 0")
-    if config.workers <= 0:
-        raise ConfigError("--workers must be > 0")
     if config.max_buildings <= 0:
         raise ConfigError("--max-buildings must be > 0")
     if config.max_area_km2 <= 0:

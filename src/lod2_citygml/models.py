@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from shapely.geometry import LineString, Polygon
+import numpy as np
+from shapely.geometry import Polygon
 
 
 @dataclass(slots=True)
@@ -15,8 +16,9 @@ class BuildingRecord:
     roof_confidence: float
     roof_kind: str
     eave_z: float | None = None
-    roof_lines: list[LineString] | None = None
-    roof_triangles: list[list[tuple[float, float, float]]] | None = None
+    long_axis: np.ndarray | None = None
+    short_axis: np.ndarray | None = None
+    roof_faces: list[list[tuple[float, float, float]]] | None = None
 
 
 @dataclass(slots=True)
