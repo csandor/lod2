@@ -32,15 +32,19 @@ def _open_raster(path: Path, label: str) -> rasterio.DatasetReader:
         raise ConfigError(msg) from exc
 
 
-def load_inputs(config: RunConfig) -> tuple[gpd.GeoDataFrame, rasterio.DatasetReader, rasterio.DatasetReader, rasterio.DatasetReader]:
+def load_inputs(
+    config: RunConfig,
+) -> tuple[gpd.GeoDataFrame, rasterio.DatasetReader, rasterio.DatasetReader, rasterio.DatasetReader, rasterio.DatasetReader]:
     _check_exists(config.footprints, "Footprints")
     _check_exists(config.orthophoto, "Orthophoto")
     _check_exists(config.dsm, "DSM")
     _check_exists(config.dtm, "DTM")
+    _check_exists(config.relative_height, "Relative height")
 
     _check_raster_suffix(config.orthophoto, "Orthophoto")
     _check_raster_suffix(config.dsm, "DSM")
     _check_raster_suffix(config.dtm, "DTM")
+    _check_raster_suffix(config.relative_height, "Relative height")
 
     footprints = gpd.read_file(config.footprints, engine="pyogrio")
     if footprints.empty:
@@ -51,5 +55,6 @@ def load_inputs(config: RunConfig) -> tuple[gpd.GeoDataFrame, rasterio.DatasetRe
     ortho = _open_raster(config.orthophoto, "Orthophoto")
     dsm = _open_raster(config.dsm, "DSM")
     dtm = _open_raster(config.dtm, "DTM")
+    rel_height = _open_raster(config.relative_height, "Relative height")
 
-    return footprints, ortho, dsm, dtm
+    return footprints, ortho, dsm, dtm, rel_height

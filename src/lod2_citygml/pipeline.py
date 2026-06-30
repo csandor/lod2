@@ -17,10 +17,10 @@ from lod2_citygml.qa import validate_inputs
 
 
 def run_pipeline(config: RunConfig) -> None:
-    footprints, ortho, dsm, dtm = load_inputs(config)
+    footprints, ortho, dsm, dtm, rel_height = load_inputs(config)
 
     try:
-        validate_inputs(config, footprints, ortho, dsm, dtm)
+        validate_inputs(config, footprints, ortho, dsm, dtm, rel_height)
 
         if config.crs:
             footprints = footprints.to_crs(config.crs)
@@ -29,7 +29,7 @@ def run_pipeline(config: RunConfig) -> None:
             footprints = _clip_to_aoi(footprints, config.aoi)
 
         records = estimate_buildings(footprints, dsm, dtm)
-        records = infer_roof_kind(records, dsm, config.min_roof_confidence)
+        records = infer_roof_kind(records, rel_height, config.min_roof_confidence)
 
         records = [
             replace(
@@ -42,6 +42,7 @@ def run_pipeline(config: RunConfig) -> None:
                     rec.roof_kind,
                     eave_z=rec.base_z + (rec.roof_z - rec.base_z) * 0.3,
                     ridge_z=rec.roof_z,
+                    roof_shape=config.roof_shape,
                 ),
             )
             if rec.roof_kind != "flat"
@@ -64,6 +65,7 @@ def run_pipeline(config: RunConfig) -> None:
         ortho.close()
         dsm.close()
         dtm.close()
+        rel_height.close()
 
 
 def _clip_to_aoi(footprints: gpd.GeoDataFrame, aoi: str) -> gpd.GeoDataFrame:

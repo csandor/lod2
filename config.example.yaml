@@ -1,17 +1,80 @@
+# --- Inputs ---
+
+# Building footprints vector file. Supported: .shp, .gpkg, .geojson
 footprints: data/buildings.shp
+
+# Orthophoto raster. Must be 3- or 4-band (RGB/RGBA). Supported: .tif, .tiff, .vrt, .ecw
 orthophoto: data/orthophoto.vrt
+
+# Digital Surface Model (absolute elevation, single-band). Supported: .tif, .tiff, .vrt, .ecw
 dsm: data/dsm.vrt
+
+# Digital Terrain Model (bare ground elevation, single-band). Same formats as DSM.
 dtm: data/dtm.vrt
+
+# DSM minus DTM raster (relative building height above ground, single-band).
+# Used for roof shape classification — avoids terrain slope contaminating the signal.
+relative_height: data/relative_height.vrt
+
+# --- Outputs ---
+
+# Output CityGML file. At least one of out_citygml / out_cityjson is required.
 out_citygml: out/city.gml
+
+# Output CityJSON file.
 out_cityjson: out/city.city.json
+
+# CityGML schema version to write. Options: "2.0", "3.0"
 citygml_version: "2.0"
-crs: null
-aoi: null
-max_buildings: 50000
-max_area_km2: 25.0
-on_large_area: warn
-min_roof_confidence: 0.45
+
+# Optional intermediate LOD1 GeoPackage (2D footprints + heights, useful for inspection in QGIS).
 lod1_intermediate: out/lod1.gpkg
-tile_size: 2000
-log_level: INFO
+
+# Optional QA report written as JSON after a successful run.
 report: out/report.json
+
+# --- Spatial filtering ---
+
+# Override the CRS of the footprint layer. Accepts EPSG codes ("EPSG:23700") or WKT.
+# Leave null to use the CRS embedded in the footprint file.
+crs: null
+
+# Clip to an area of interest before processing. Two forms:
+#   - Bounding box: "minx,miny,maxx,maxy"  (in the footprint CRS)
+#   - Vector file:  path to a polygon file whose union is used as the clip mask
+aoi: null
+
+# --- Large-area safeguards ---
+
+# Maximum number of buildings before triggering the on_large_area action.
+max_buildings: 50000
+
+# Maximum total footprint area in km² before triggering the on_large_area action.
+max_area_km2: 25.0
+
+# What to do when the input exceeds max_buildings or max_area_km2.
+# Options: warn (print a warning and continue), abort (raise an error), tile (print a tiling hint)
+on_large_area: warn
+
+# Tile width in CRS units, reported in the hint when on_large_area is "tile". Not used otherwise.
+tile_size: 2000
+
+# --- Roof reconstruction ---
+
+# Minimum confidence score [0–1] for classifying a building as gable or hip.
+# Buildings below this threshold are written as flat roofs.
+# Confidence is computed as max(profile variance along short/long axis) / height spread.
+# Typical values: 0.1 (permissive), 0.3 (balanced), 0.5 (strict).
+min_roof_confidence: 0.45
+
+# Roof face geometry mode.
+# mbr       — roof faces are fitted to the minimum bounding rectangle of the footprint.
+#             Always produces 4 clean planar faces. Fast and geometrically simple.
+# footprint — roof faces follow the actual footprint outline edge by edge.
+#             Produces one face per footprint edge; preserves L-shapes and recesses.
+roof_shape: mbr
+
+# --- Logging ---
+
+# Log verbosity. Options: DEBUG, INFO, WARNING, ERROR
+log_level: INFO

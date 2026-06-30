@@ -26,18 +26,20 @@ def validate_inputs(
     ortho: rasterio.DatasetReader,
     dsm: rasterio.DatasetReader,
     dtm: rasterio.DatasetReader,
+    rel_height: rasterio.DatasetReader,
 ) -> WorkloadEstimate:
     if footprints.crs is None:
         raise ConfigError("Footprints CRS is missing.")
-    if ortho.crs is None or dsm.crs is None or dtm.crs is None:
+    if ortho.crs is None or dsm.crs is None or dtm.crs is None or rel_height.crs is None:
         raise ConfigError("One or more raster CRSs are missing.")
 
     fp_crs = CRS.from_user_input(footprints.crs)
     o_crs = CRS.from_user_input(ortho.crs)
     dsm_crs = CRS.from_user_input(dsm.crs)
     dtm_crs = CRS.from_user_input(dtm.crs)
+    rh_crs = CRS.from_user_input(rel_height.crs)
 
-    if not (_crs_equal(fp_crs, o_crs) and _crs_equal(fp_crs, dsm_crs) and _crs_equal(fp_crs, dtm_crs)):
+    if not (_crs_equal(fp_crs, o_crs) and _crs_equal(fp_crs, dsm_crs) and _crs_equal(fp_crs, dtm_crs) and _crs_equal(fp_crs, rh_crs)):
         raise ConfigError("All inputs must use the same projected CRS.")
     if not fp_crs.is_projected:
         raise ConfigError("Input CRS must be projected (uniform cartesian reference system).")
@@ -48,9 +50,11 @@ def validate_inputs(
         raise ConfigError(f"DSM must have 1 band, got {dsm.count}.")
     if dtm.count != 1:
         raise ConfigError(f"DTM must have 1 band, got {dtm.count}.")
+    if rel_height.count != 1:
+        raise ConfigError(f"Relative height must have 1 band, got {rel_height.count}.")
 
     fp_bounds = box(*footprints.total_bounds)
-    raster_union = box(*ortho.bounds).intersection(box(*dsm.bounds)).intersection(box(*dtm.bounds))
+    raster_union = box(*ortho.bounds).intersection(box(*dsm.bounds)).intersection(box(*dtm.bounds)).intersection(box(*rel_height.bounds))
     if raster_union.is_empty or not raster_union.intersects(fp_bounds):
         raise ConfigError("No spatial overlap between footprints and shared raster extent.")
 
